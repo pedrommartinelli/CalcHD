@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f766e"><link rel="manifest" href="manifest.json"><title>Kt/V HD</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#17202a;background:#f4f7f6;--accent:#0f766e;--soft:#e7f4f1;--border:#d6dfdc;--danger:#b42318}
+*{box-sizing:border-box}body{margin:0;background:#f4f7f6}main{max-width:760px;margin:auto;padding:20px 16px 40px}.top{display:flex;justify-content:space-between;align-items:end;margin-bottom:18px}.title{font-size:28px;font-weight:800}.sub{color:#66736f;font-size:14px;margin-top:3px}.card{background:white;border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:0 4px 18px #0b3b3520}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field label{display:block;font-size:13px;font-weight:650;margin-bottom:6px}.field input,.field select{width:100%;padding:12px;border:1px solid #cbd5d1;border-radius:11px;font-size:16px;background:white}.full{grid-column:1/-1}button{border:0;border-radius:12px;padding:13px 16px;font-size:16px;font-weight:750;cursor:pointer}.primary{background:var(--accent);color:white;width:100%;margin-top:14px}.secondary{background:var(--soft);color:#075e56}.danger{background:#fff0ef;color:var(--danger)}.results{display:grid;grid-template-columns:1fr 1fr;gap:10px}.metric{padding:15px;border-radius:14px;background:#f5f8f7;border:1px solid var(--border)}.metric .v{font-size:26px;font-weight:800;margin-top:3px}.metric .k{font-size:12px;color:#68756f}.hero{background:var(--soft);border-color:#b8ded7}.hero .v{font-size:34px;color:#075e56}.status{font-weight:750;margin-top:12px}.ok{color:#087443}.warn{color:#9a6700}.bad{color:#b42318}.row{display:flex;gap:8px;flex-wrap:wrap}.history-item{padding:12px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:10px}.history-item:last-child{border-bottom:0}.muted{color:#6b7773;font-size:12px}.small{font-size:13px;color:#596560}.hidden{display:none}@media(max-width:560px){.grid,.results{grid-template-columns:1fr}.top{align-items:start}.title{font-size:25px}}
+</style></head>
+<body><main>
+<div class="top"><div><div class="title">Kt/V HD</div><div class="sub">Adecuación de hemodiálisis · Daugirdas II</div></div><button class="secondary" id="newBtn">Nueva</button></div>
+<section class="card"><div class="grid">
+<div class="field"><label>Edad (años)</label><input id="age" type="number" min="1" step="1" value="59"></div>
+<div class="field"><label>Sexo</label><select id="sex"><option value="M">Masculino</option><option value="F">Femenino</option></select></div>
+<div class="field"><label>Talla (cm)</label><input id="height" type="number" min="50" step="0.1" value="175"></div>
+<div class="field"><label>Peso pre-HD (kg)</label><input id="preWeight" type="number" min="1" step="0.1" value="73.8"></div>
+<div class="field"><label>Peso post-HD (kg)</label><input id="postWeight" type="number" min="1" step="0.1" value="71.6"></div>
+<div class="field"><label>UF (L)</label><input id="uf" type="number" min="0" step="0.1" value="3.2"></div>
+<div class="field"><label>Urea pre-HD (mg/dL)</label><input id="preUrea" type="number" min="0.1" step="0.1" value="150"></div>
+<div class="field"><label>Urea post-HD (mg/dL)</label><input id="postUrea" type="number" min="0.1" step="0.1" value="73"></div>
+<div class="field"><label>Tiempo efectivo (h)</label><input id="time" type="number" min="0.1" step="0.1" value="4"></div>
+</div><button class="primary" id="calc">CALCULAR Kt/V</button></section>
+<section class="card hidden" id="out"><div class="results">
+<div class="metric hero"><div class="k">Kt/V Daugirdas II</div><div class="v" id="ktv">—</div></div>
+<div class="metric"><div class="k">URR</div><div class="v" id="urr">—</div></div>
+<div class="metric"><div class="k">V · Watson</div><div class="v" id="vwat">—</div></div>
+<div class="metric"><div class="k">R · post/pre</div><div class="v" id="ratio">—</div></div>
+</div><div class="status" id="status"></div><div class="small" id="detail"></div><div class="row" style="margin-top:14px"><button class="secondary" id="save">Guardar sesión</button></div></section>
+<section class="card"><div style="display:flex;justify-content:space-between;align-items:center"><div><b>Historial local</b><div class="muted">Se guarda solamente en este dispositivo/navegador.</div></div><button class="danger" id="clear">Borrar</button></div><div id="history" class="small" style="margin-top:8px"></div></section>
+<section class="card"><b>Urea ↔ BUN</b><div class="grid" style="margin-top:12px"><div class="field"><label>Urea (mg/dL)</label><input id="ureaConv" type="number" step="0.1"></div><div class="field"><label>BUN (mg/dL)</label><input id="bunConv" type="number" step="0.1"></div></div><div class="muted" style="margin-top:8px">Urea ≈ BUN × 2,14</div></section>
+<section class="small">Nota: herramienta de cálculo. La adecuación debe interpretarse con el contexto clínico, técnica de toma de muestras y mediciones seriadas.</section>
+</main>
+<script>
+const $=id=>document.getElementById(id);let last=null;
+function val(id){return parseFloat($(id).value)}
+function calc(){
+ const age=val('age'),h=val('height'),pw=val('postWeight'),pre=val('preUrea'),post=val('postUrea'),t=val('time'),uf=val('uf'),sex=$('sex').value;
+ if([age,h,pw,pre,post,t,uf].some(x=>!isFinite(x)||x<=0)||post>=pre){alert('Revisá los datos: todos deben ser positivos y la urea post debe ser menor que la pre.');return}
+ let V=sex==='M'?2.447-(0.09516*age)+(0.1074*h)+(0.3362*pw):-2.097+(0.1069*h)+(0.2466*pw);
+ const R=post/pre,urr=(1-R)*100,ktv=-Math.log(R-0.008*t)+(4-3.5*R)*(uf/V);
+ last={age,sex,h,pw,pre,post,t,uf,V,R,urr,ktv,date:new Date().toLocaleString('es-AR')};
+ $('ktv').textContent=ktv.toFixed(2);$('urr').textContent=urr.toFixed(1)+'%';$('vwat').textContent=V.toFixed(1)+' L';$('ratio').textContent=R.toFixed(3);
+ const s=$('status');s.className='status '+(ktv>=1.2?'ok':ktv>=1?'warn':'bad');s.textContent=ktv>=1.2?'Kt/V ≥ 1,2 · objetivo orientativo alcanzado':ktv>=1?'Kt/V entre 1,0 y 1,19 · revisar contexto':'Kt/V < 1,0 · revisar dosis/acceso/toma de muestra';
+ $('detail').textContent=`BUN equivalente: pre ${(pre/2.14).toFixed(1)} mg/dL · post ${(post/2.14).toFixed(1)} mg/dL`;
+ $('out').classList.remove('hidden');
+}
+$('calc').onclick=calc;$('newBtn').onclick=()=>{document.querySelectorAll('input').forEach(x=>{if(x.id!=='ureaConv'&&x.id!=='bunConv')x.value=''});$('out').classList.add('hidden');$('age').focus()};
+$('save').onclick=()=>{if(!last)return;let h=JSON.parse(localStorage.ktvHistory||'[]');h.unshift(last);localStorage.ktvHistory=JSON.stringify(h.slice(0,50));render()};
+$('clear').onclick=()=>{if(confirm('¿Borrar todo el historial local?')){localStorage.removeItem('ktvHistory');render()}};
+function render(){let h=JSON.parse(localStorage.ktvHistory||'[]');$('history').innerHTML=h.length?h.map((x,i)=>`<div class="history-item"><div><b>${x.ktv.toFixed(2)} Kt/V</b> · URR ${x.urr.toFixed(1)}%<br><span class="muted">${x.date} · Urea ${x.pre}/${x.post} · ${x.t} h · UF ${x.uf} L</span></div><button class="secondary" onclick="loadHist(${i})">Cargar</button></div>`).join(''):'Sin sesiones guardadas.'}
+window.loadHist=i=>{let h=JSON.parse(localStorage.ktvHistory||'[]'),x=h[i];['age','height','postWeight','preUrea','postUrea','time','uf'].forEach((id,j)=>{});$('age').value=x.age;$('sex').value=x.sex;$('height').value=x.h;$('postWeight').value=x.pw;$('preWeight').value=(x.pw+x.uf).toFixed(1);$('preUrea').value=x.pre;$('postUrea').value=x.post;$('time').value=x.t;$('uf').value=x.uf;calc()}
+$('ureaConv').oninput=e=>{let n=val('ureaConv');if(isFinite(n))$('bunConv').value=(n/2.14).toFixed(2)};$('bunConv').oninput=e=>{let n=val('bunConv');if(isFinite(n))$('ureaConv').value=(n*2.14).toFixed(2)};
+render();calc();
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script></body></html>
